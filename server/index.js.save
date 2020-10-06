@@ -1,0 +1,16 @@
+const express = require('express')
+const app = express()
+const port = 9000
+
+cnst dados = [
+]
+
+app.set('view engine', 'pug')
+
+app.get('/', (req, res) => {
+  res.render('index', { dados })
+})
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`)
+})
