@@ -1,41 +1,63 @@
-#include <ESP8266WiFi.h>
+#include <FS.h>                   //this needs to be first, or it all crashes and burns...
+
+#include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <ESP8266HTTPClient.h>
-#include <WiFiClient.h>
 
-const char* ssid = "";
-const char* password = "";
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
-const char* serverName = "http://177.44.248.9:9000/dados";
+WiFiManager wifiManager;
+
+const char* endpoint = "http://177.44.248.9:9000/dados";
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 5000;
+unsigned long timerDelay = 10000;
 
 unsigned long luminosity;
 unsigned long temperature;
 unsigned long moisture;
 
 void setup() {
-  Serial.begin(115200);
+  pinMode(0, INPUT_PULLUP);
+  wifiConnect();
+}
 
-  WiFi.begin(ssid, password);
-  Serial.println("Connecting");
-  while(WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+void wifiConnect() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  Serial.println();
+
+  //wifiManager.resetSettings();
+
+  // exit after config instead of connecting
+  wifiManager.setBreakAfterConfig(true);
+
+  // set Wifi ID and password
+  if (!wifiManager.autoConnect("APPID")) {
+    Serial.println("failed to connect, we should reset as see if it connects");
+    delay(3000);
+    ESP.reset();
+    delay(5000);
   }
-  Serial.println("");
-  Serial.print("Connected to WiFi with IP Address: ");
+
+  Serial.println("local ip");
   Serial.println(WiFi.localIP());
- 
-  Serial.println("Waiting...");
 }
 
 void loop() {
+  if (digitalRead(0) == LOW) {
+    // Reset settings
+    Serial.println("Reseted");
+    wifiManager.resetSettings();
+    wifiConnect();
+  }
+  
   if ((millis() - lastTime) > timerDelay) {
     if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
       
-      http.begin(serverName);
+      http.begin(endpoint);
 
       luminosity = random(0, 99);
       temperature = random(0, 50);
@@ -44,7 +66,9 @@ void loop() {
       http.addHeader("Content-Type", "application/json");
       String json = "{\"luminosity\":"+(String)luminosity+",\"temperature\":"+(String)luminosity+",\"moisture\":"+(String)moisture+"}";
       int httpResponseCode = http.POST(json);
-     
+      
+      Serial.println("HTTP POST: "+(String)json);
+      
       Serial.print("HTTP Response code: ");
       Serial.println(httpResponseCode);
       

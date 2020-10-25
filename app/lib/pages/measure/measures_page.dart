@@ -32,7 +32,7 @@ class _MeasuresPageState extends State<MeasuresPage> {
               return Center(child: CircularProgressIndicator());
 
             sensors = snapshot.data;
-            return _listView(snapshot.data);
+            return _listView(snapshot.data.reversed.toList());
           }),
     );
   }
@@ -44,22 +44,26 @@ class _MeasuresPageState extends State<MeasuresPage> {
   }
 
   _listView(List<Measure> data) {
-    return ListView.builder(
-      itemCount: data.length,
-      itemBuilder: (BuildContext context, int index) {
-        final measure = data[index];
-        return Container(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
+    return RefreshIndicator(
+      child: ListView.builder(
+        itemCount: data.length,
+        itemBuilder: (BuildContext context, int index) {
+          final measure = data[index];
+          return Container(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
 //              _alertItem(alert),
-              _measureItem(measure),
-              Divider(),
-            ],
-          ),
-        );
-      },
+                _measureItem(measure),
+                Divider(),
+              ],
+            ),
+          );
+        },
+      ),
+      onRefresh: () => _bloc.fetch(),
+      backgroundColor: Colors.white,
     );
   }
 
