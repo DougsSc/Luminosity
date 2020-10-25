@@ -4,7 +4,7 @@ import 'package:app/utils/simple_bloc.dart';
 
 class MeasuresBloc extends SimpleBloc<List<Measure>> {
 
-  fetch() async {
+  Future fetch() async {
     try {
       add(await MeasuresApi.measures());
     } catch(e) {

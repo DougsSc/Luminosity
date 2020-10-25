@@ -12,7 +12,7 @@ class MeasuresApi {
 
     http.Response response = await http.get(url);
 
-    print('Response Body: ${response.body}');
+    //print('Response Body: ${response.body}');
 
     List<Measure> sensors = [];
     if (response.statusCode == 200) {

@@ -1,5 +1,7 @@
 import 'package:app/pages/measure/measures_page.dart';
+import 'package:app/pages/trigger/add_trigger_page.dart';
 import 'package:app/pages/trigger/trigger_page.dart';
+import 'package:app/utils/nav.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -41,10 +43,6 @@ class _HomePageState extends State<HomePage> {
 
   _floatActionButton() {
     return Container(
-      /* padding: EdgeInsets.only(
-        bottom:
-            MediaQuery.of(_scaffoldKey.currentState.context).viewPadding.bottom,
-      ), */
       child: FloatingActionButton(
         onPressed: _onClickAddAlert,
         child: Icon(Icons.add, color: Colors.white),
@@ -53,6 +51,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   _onClickAddAlert() {
-    // push(context, AddAlertPae());
+      push(context, AddTriggerPage());
   }
 }
