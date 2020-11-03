@@ -1,7 +1,6 @@
 require('dotenv').config()
-
-import express from 'express'
-import { json } from 'body-parser'
+const express = require('express')
+const json = require('body-parser').json
 
 const app = express()
 const port = process.env.PORT || 9000
@@ -27,13 +26,16 @@ app.post('/action', (req, res) => {
 
   switch (action.type) {
     case 'turnPaddles':
-      actions.unshift({
+      const next = {
         motor: 'paddles',
         direction: action.value < 0 ? 'right' : 'left',
-        time: action.value * PADDLE_TIME
-      })
+        time: Math.abs(action.value * PADDLE_TIME)
+      }
+      actions.unshift(next)
+      res.json(next)
       break
   }
+  res.sendStatus(400)
 })
 
 app.get('/action', (req, res) => {
