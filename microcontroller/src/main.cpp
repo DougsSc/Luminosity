@@ -7,17 +7,21 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
-#define mla 14
-#define mlb 12
-#define tmp 3000
+#include <ArduinoJson.h>
+
+#define PADDLE_RIGHT 14
+#define PADDLE_LEFT  12
 
 WiFiManager wifiManager;
 std::unique_ptr<ESP8266WebServer> server;
 
-const char* endpoint = "http://177.44.248.9:9000/dados";
+const String ENDPOINT = "http://177.44.248.9:9000";
 
-unsigned long lastTime = 0;
-unsigned long timerDelay = 5000;
+unsigned long lastStatusTime   = 0;
+unsigned long statusTimerDelay = 5000;
+
+unsigned long lastActionTime   = 0;
+unsigned long actionTimerDelay = 1000;
 
 unsigned long luminosity;
 unsigned long temperature;
@@ -27,32 +31,32 @@ void handleRoot() {
   server->send(200, "text/plain", "hello from esp8266!");
 }
 
-void handleTurnRight() {
+void turnPaddleRight(int tmp) {
   Serial.println("Gira para direita");
-  digitalWrite(mla, LOW);
-  digitalWrite(mlb, HIGH);
+  digitalWrite(PADDLE_LEFT,  LOW);
+  digitalWrite(PADDLE_RIGHT, HIGH);
   delay(tmp);
 
   Serial.println("Para");
-  digitalWrite(mla, LOW);
-  digitalWrite(mlb, LOW);
+  digitalWrite(PADDLE_LEFT,  LOW);
+  digitalWrite(PADDLE_RIGHT, LOW);
   delay(100);
 
-  server->send(200, "text/plain", "girou para direita");
+  // server->send(200, "text/plain", "girou para direita");
 }
 
-void handleTurnLeft() {
+void turnPaddleLeft(int tmp) {
   Serial.println("Gira para esquerda");
-  digitalWrite(mla, LOW);
-  digitalWrite(mlb, HIGH);
+  digitalWrite(PADDLE_RIGHT, LOW);
+  digitalWrite(PADDLE_LEFT,  HIGH);
   delay(tmp);
 
   Serial.println("Para");
-  digitalWrite(mla, LOW);
-  digitalWrite(mlb, LOW);
+  digitalWrite(PADDLE_RIGHT, LOW);
+  digitalWrite(PADDLE_LEFT,  LOW);
   delay(100);
 
-  server->send(200, "text/plain", "girou para esquerda");
+  // server->send(200, "text/plain", "girou para esquerda");
 }
 
 void wifiConnect() {
@@ -77,8 +81,8 @@ void startServer() {
   server.reset(new ESP8266WebServer(WiFi.localIP(), 80));
 
   server->on("/", handleRoot);
-  server->on("/giraDireita", handleTurnRight);
-  server->on("/giraEsquerda", handleTurnLeft);
+  // server->on("/giraDireita", handleTurnRight);
+  // server->on("/giraEsquerda", handleTurnLeft);
 
   server->begin();
   Serial.println("HTTP server started");
@@ -91,11 +95,13 @@ void resetSettings() {
   wifiConnect();
 }
 
-void sendStatus() {
-  if(WiFi.status()== WL_CONNECTED){
+void sendData() {
+  if(WiFi.status() == WL_CONNECTED) {
+    Serial.println("Sending Data");
+
     HTTPClient http;
 
-    http.begin(endpoint);
+    http.begin(ENDPOINT + "/data");
 
     luminosity = random(0, 99);
     temperature = random(0, 50);
@@ -112,21 +118,53 @@ void sendStatus() {
   } else {
     Serial.println("WiFi Disconnected");
   }
-  lastTime = millis();
+}
+
+void requestAction() {
+  if(WiFi.status() == WL_CONNECTED){
+    Serial.println("Requesting Action");
+
+    HTTPClient http;
+
+    http.begin(ENDPOINT + "/action");
+
+    int httpResponseCode = http.GET();
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+
+    DynamicJsonDocument res(2048);
+    deserializeJson(res, http.getStream());
+
+    String motor = res["motor"].as<String>();
+    String direction = res["direction"].as<String>();
+    int time = res["time"].as<int>();
+
+    if (motor.equals("paddles")) {
+      if (direction.equals("right")) {
+        turnPaddleRight(time);
+      } else if (direction.equals("left")) {
+        turnPaddleLeft(time);
+      }
+    }
+
+    http.end();
+  } else {
+    Serial.println("WiFi Disconnected");
+  }
 }
 
 void setup() {
   Serial.begin(115200);
 
   pinMode(0, INPUT_PULLUP);
-  pinMode(mla, OUTPUT);
-  pinMode(mlb, OUTPUT);
+  pinMode(PADDLE_LEFT,  OUTPUT);
+  pinMode(PADDLE_RIGHT, OUTPUT);
 
-  digitalWrite(mla, LOW);
-  digitalWrite(mlb, LOW);
+  digitalWrite(PADDLE_LEFT,  LOW);
+  digitalWrite(PADDLE_RIGHT, LOW);
 
   wifiConnect();
-  startServer();
+  // startServer();
 }
 
 void loop() {
@@ -134,9 +172,15 @@ void loop() {
     resetSettings();
   }
 
-  if ((millis() - lastTime) > timerDelay) {
-    sendStatus();
+  if ((millis() - lastStatusTime) > statusTimerDelay) {
+    sendData();
   }
 
-  server->handleClient();
+  if ((millis() - lastActionTime) > actionTimerDelay) {
+    requestAction();
+  }
+
+  lastActionTime = lastStatusTime = millis();
+
+  // server->handleClient();
 }
