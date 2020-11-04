@@ -32,7 +32,7 @@ void handleRoot() {
 }
 
 void turnPaddleRight(int tmp) {
-  Serial.println("Gira para direita");
+  Serial.println("Gira para direita - " + (String) tmp);
   digitalWrite(PADDLE_LEFT,  LOW);
   digitalWrite(PADDLE_RIGHT, HIGH);
   delay(tmp);
@@ -46,7 +46,7 @@ void turnPaddleRight(int tmp) {
 }
 
 void turnPaddleLeft(int tmp) {
-  Serial.println("Gira para esquerda");
+  Serial.println("Gira para esquerda - " + (String) tmp);
   digitalWrite(PADDLE_RIGHT, LOW);
   digitalWrite(PADDLE_LEFT,  HIGH);
   delay(tmp);
@@ -174,13 +174,16 @@ void loop() {
 
   if ((millis() - lastStatusTime) > statusTimerDelay) {
     sendData();
+
+    lastStatusTime = millis();
   }
 
   if ((millis() - lastActionTime) > actionTimerDelay) {
     requestAction();
+
+    lastActionTime = millis();
   }
 
-  lastActionTime = lastStatusTime = millis();
 
   // server->handleClient();
 }
