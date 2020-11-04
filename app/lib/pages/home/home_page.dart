@@ -1,8 +1,11 @@
 import 'package:app/pages/measure/measures_page.dart';
+import 'package:app/pages/moviment/moviment_api.dart';
+import 'package:app/pages/moviment/moviment_page.dart';
 import 'package:app/pages/trigger/add_trigger_page.dart';
 import 'package:app/pages/trigger/trigger_page.dart';
 import 'package:app/utils/nav.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -45,12 +48,17 @@ class _HomePageState extends State<HomePage> {
     return Container(
       child: FloatingActionButton(
         onPressed: _onClickAddAlert,
-        child: Icon(Icons.add, color: Colors.white),
+        child: FaIcon(
+          FontAwesomeIcons.arrowsAltH,
+          color: Colors.white,
+        )
+        // Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
   _onClickAddAlert() {
-      push(context, AddTriggerPage());
+      push(context, MovimentPage());
+      //push(context, AddTriggerPage());
   }
 }

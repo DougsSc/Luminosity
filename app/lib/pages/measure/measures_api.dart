@@ -8,7 +8,7 @@ class MeasuresApi {
   static Future<List<Measure>> measures() async {
     print("GET => measures()");
 
-    String url = '$DOMAIN/dados';
+    String url = '$DOMAIN/data';
 
     http.Response response = await http.get(url);
 
