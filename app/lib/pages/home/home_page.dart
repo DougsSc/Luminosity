@@ -27,12 +27,18 @@ class _HomePageState extends State<HomePage> {
           bottom: TabBar(
             tabs: [
               Tab(icon: Icon(Icons.insert_chart, color: Colors.white)),
-              Tab(icon: Icon(Icons.notifications_active, color: Colors.white))
+              Tab(
+                icon: FaIcon(
+                  FontAwesomeIcons.arrowsAltH,
+                  color: Colors.white,
+                ),
+              ),
+              //Icon(Icons.notifications_active, color: Colors.white))
             ],
           ),
         ),
         body: _body(),
-        floatingActionButton: _floatActionButton(),
+        //floatingActionButton: _floatActionButton(),
       ),
     );
   }
@@ -40,25 +46,25 @@ class _HomePageState extends State<HomePage> {
   _body() {
     return TabBarView(children: [
       MeasuresPage(),
-      TriggerPage(),
+      MovimentPage(),
     ]);
   }
 
   _floatActionButton() {
     return Container(
       child: FloatingActionButton(
-        onPressed: _onClickAddAlert,
-        child: FaIcon(
-          FontAwesomeIcons.arrowsAltH,
-          color: Colors.white,
-        )
-        // Icon(Icons.add, color: Colors.white),
-      ),
+          onPressed: _onClickAddAlert,
+          child: FaIcon(
+            FontAwesomeIcons.arrowsAltH,
+            color: Colors.white,
+          )
+          // Icon(Icons.add, color: Colors.white),
+          ),
     );
   }
 
   _onClickAddAlert() {
-      push(context, MovimentPage());
-      //push(context, AddTriggerPage());
+    push(context, MovimentPage());
+    //push(context, AddTriggerPage());
   }
 }

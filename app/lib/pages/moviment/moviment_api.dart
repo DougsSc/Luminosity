@@ -12,7 +12,6 @@ class MovimentApi {
     String url = '$DOMAIN/action';
 
     String body = json.encode({
-      'type': 'turnPaddles',
       'value': value
     });
 
@@ -22,6 +21,6 @@ class MovimentApi {
       'Content-Type': 'application/json',
     });
 
-    print('Response Body: ${response.body}');
+    print('Response Body: ${response.body}'); /**/
   }
 }
