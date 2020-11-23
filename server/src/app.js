@@ -8,7 +8,7 @@ const port = process.env.PORT || 9000
 
 const DATA_FILE = 'data.json'
 
-const data = {
+let data = {
   position: 1,
   data: []
 }
@@ -43,6 +43,16 @@ app.post('/action', (req, res) => {
   const action = req.body
 
   if (action.value !== 0) {
+    actions.unshift(action)
+    return res.sendStatus(200)
+  }
+
+  res.sendStatus(400)
+})
+
+app.get('/action', (req, res) => {
+  const action = actions.pop()
+  if (action && action.value !== 0) {
     readData()
     const nextPosition = Math.max(Math.min(data.position + action.value, 1), 0)
 
@@ -50,18 +60,10 @@ app.post('/action', (req, res) => {
       value: nextPosition - data.position
     }
 
-    actions.unshift(next)
-    res.json(next)
-  }
-  res.sendStatus(400)
-})
-
-app.get('/action', (req, res) => {
-  const action = actions.pop()
-  if (action) {
-    data.position = data.position + action.value
+    data.position = nextPosition
     saveData()
-    res.json(action)
+
+    return res.json(next)
   }
 
   res.sendStatus(200)
