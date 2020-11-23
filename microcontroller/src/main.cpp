@@ -19,6 +19,9 @@
 
 #define BUTTON 0 // flash button
 
+#define LED_ACTION D0 // led verde
+#define LED_DATA   D4 // led vermelho
+
 WiFiManager wifiManager;
 
 Stepper stepper(STEPS, IN4, IN2, IN3, IN1);
@@ -26,7 +29,7 @@ Stepper stepper(STEPS, IN4, IN2, IN3, IN1);
 const String ENDPOINT = "http://177.44.248.9:9000";
 
 unsigned long lastTime   = 0;
-unsigned long timerDelay = 5000;
+unsigned long timerDelay = 10000;
 
 unsigned long luminosity;
 unsigned long temperature;
@@ -38,6 +41,9 @@ int remainingSteps = 0;
 int stepDirection = 0;
 
 int maxSteps = 200;
+
+boolean blockData = false;
+boolean blockAction = false;
 
 void wifiConnect() {
   Serial.println();
@@ -123,11 +129,11 @@ void requestAction() {
 
 void clickEvent() {
   Serial.println("Click");
-  moveMotor(0.25);
+  blockData = !blockData;
 }
 void doubleClickEvent() {
   Serial.println("Double Click");
-  moveMotor(-0.25);
+  blockAction = !blockAction;
 }
 void holdEvent() {
   Serial.println("Hold");
@@ -222,16 +228,26 @@ void setup() {
   pinMode(IN2, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
+
   stepper.setSpeed(5);
 
   Serial.begin(9600);
 
   pinMode(BUTTON, INPUT_PULLUP);
 
+  pinMode(LED_DATA, OUTPUT);
+  pinMode(LED_ACTION, OUTPUT);
+
+  digitalWrite(LED_DATA, LOW);
+  digitalWrite(LED_ACTION, LOW);
+
   wifiConnect();
 }
 
 void loop() {
+  digitalWrite(LED_DATA, blockData ? HIGH : LOW);
+  digitalWrite(LED_ACTION, blockAction ? HIGH : LOW);
+
   if (remainingSteps != 0) {
     int steps = min(remainingSteps, maxSteps);
     int move = steps * stepDirection;
@@ -245,14 +261,21 @@ void loop() {
 
     delay(10);
     remainingSteps = remainingSteps - steps;
-  } else if ((millis() - lastTime) > timerDelay) {
-    sendData();
-    delay(10);
-    requestAction();
-    delay(10);
-
-    lastTime = millis();
   } else {
+    if ((millis() - lastTime) > timerDelay) {
+      if (!blockData) {
+        sendData();
+        delay(10);
+      }
+
+      if (!blockAction) {
+        requestAction();
+        delay(10);
+      }
+
+      lastTime = millis();
+    }
+
     int b = checkButton();
 
     if (b == 1) clickEvent();
