@@ -7,57 +7,43 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
+#include <Stepper.h>
 #include <ArduinoJson.h>
 
-#define PADDLE_RIGHT 14
-#define PADDLE_LEFT  12
+#define STEPS  2048
+
+#define IN1   D1   // IN1 is connected to NodeMCU pin D1 (GPIO5)
+#define IN2   D2   // IN2 is connected to NodeMCU pin D2 (GPIO4)
+#define IN3   D5   // IN3 is connected to NodeMCU pin D3 (GPIO0)
+#define IN4   D6   // IN4 is connected to NodeMCU pin D4 (GPIO2)
+
+#define BUTTON 0 // flash button
+
+#define LED_ACTION D0 // led verde
+#define LED_DATA   D4 // led vermelho
 
 WiFiManager wifiManager;
-std::unique_ptr<ESP8266WebServer> server;
+
+Stepper stepper(STEPS, IN4, IN2, IN3, IN1);
 
 const String ENDPOINT = "http://177.44.248.9:9000";
 
-unsigned long lastStatusTime   = 0;
-unsigned long statusTimerDelay = 5000;
-
-unsigned long lastActionTime   = 0;
-unsigned long actionTimerDelay = 1000;
+unsigned long lastTime   = 0;
+unsigned long timerDelay = 10000;
 
 unsigned long luminosity;
 unsigned long temperature;
 unsigned long moisture;
 
-void handleRoot() {
-  server->send(200, "text/plain", "hello from esp8266!");
-}
+int valueOffset = 6;
 
-void turnPaddleRight(int tmp) {
-  Serial.println("Gira para direita - " + (String) tmp);
-  digitalWrite(PADDLE_LEFT,  LOW);
-  digitalWrite(PADDLE_RIGHT, HIGH);
-  delay(tmp);
+int remainingSteps = 0;
+int stepDirection = 0;
 
-  Serial.println("Para");
-  digitalWrite(PADDLE_LEFT,  LOW);
-  digitalWrite(PADDLE_RIGHT, LOW);
-  delay(100);
+int maxSteps = 200;
 
-  // server->send(200, "text/plain", "girou para direita");
-}
-
-void turnPaddleLeft(int tmp) {
-  Serial.println("Gira para esquerda - " + (String) tmp);
-  digitalWrite(PADDLE_RIGHT, LOW);
-  digitalWrite(PADDLE_LEFT,  HIGH);
-  delay(tmp);
-
-  Serial.println("Para");
-  digitalWrite(PADDLE_RIGHT, LOW);
-  digitalWrite(PADDLE_LEFT,  LOW);
-  delay(100);
-
-  // server->send(200, "text/plain", "girou para esquerda");
-}
+boolean blockData = false;
+boolean blockAction = false;
 
 void wifiConnect() {
   Serial.println();
@@ -74,18 +60,6 @@ void wifiConnect() {
   }
 
   Serial.print("Connected to WiFi with IP Address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void startServer() {
-  server.reset(new ESP8266WebServer(WiFi.localIP(), 80));
-
-  server->on("/", handleRoot);
-  // server->on("/giraDireita", handleTurnRight);
-  // server->on("/giraEsquerda", handleTurnLeft);
-
-  server->begin();
-  Serial.println("HTTP server started");
   Serial.println(WiFi.localIP());
 }
 
@@ -120,6 +94,12 @@ void sendData() {
   }
 }
 
+void moveMotor(float value) {
+  remainingSteps = abs(STEPS * value * valueOffset);
+  stepDirection = value / fabs(value);
+  Serial.println("Moving motor: " + (String) remainingSteps + " - " + (String) stepDirection);
+}
+
 void requestAction() {
   if(WiFi.status() == WL_CONNECTED){
     Serial.println("Requesting Action");
@@ -135,16 +115,10 @@ void requestAction() {
     DynamicJsonDocument res(2048);
     deserializeJson(res, http.getStream());
 
-    String motor = res["motor"].as<String>();
-    String direction = res["direction"].as<String>();
-    int time = res["time"].as<int>();
+    float value = res["value"].as<float>();
 
-    if (motor.equals("paddles")) {
-      if (direction.equals("right")) {
-        turnPaddleRight(time);
-      } else if (direction.equals("left")) {
-        turnPaddleLeft(time);
-      }
+    if (value != 0) {
+      moveMotor(value);
     }
 
     http.end();
@@ -153,37 +127,159 @@ void requestAction() {
   }
 }
 
+void clickEvent() {
+  Serial.println("Click");
+  blockData = !blockData;
+}
+void doubleClickEvent() {
+  Serial.println("Double Click");
+  blockAction = !blockAction;
+}
+void holdEvent() {
+  Serial.println("Hold");
+  resetSettings();
+}
+
+/**
+ * 4 Way Button
+ * 
+ * http://jmsarduino.blogspot.com/2009/10/4-way-button-click-double-click-hold.html
+ */
+// Button timing variables
+int debounce = 20;          // ms debounce period to prevent flickering when pressing or releasing the button
+int DCgap = 250;            // max ms between clicks for a double click event
+int holdTime = 2000;        // ms hold period: how long to wait for press+hold event
+
+// Button variables
+boolean buttonVal = HIGH;   // value read from button
+boolean buttonLast = HIGH;  // buffered value of the button's previous state
+boolean DCwaiting = false;  // whether we're waiting for a double click (down)
+boolean DConUp = false;     // whether to register a double click on next release, or whether to wait and click
+boolean singleOK = true;    // whether it's OK to do a single click
+long downTime = -1;         // time the button was pressed down
+long upTime = -1;           // time the button was released
+boolean ignoreUp = false;   // whether to ignore the button release because the click+hold was triggered
+boolean waitForUp = false;        // when held, whether to wait for the up event
+boolean holdEventPast = false;    // whether or not the hold event happened already
+
+int checkButton() {
+    int event = 0;
+    buttonVal = digitalRead(BUTTON);
+
+    if (buttonVal == HIGH && buttonLast == HIGH)
+    {
+      event = -1;
+    }
+
+   // Button pressed down
+   if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce)
+   {
+       downTime = millis();
+       ignoreUp = false;
+       waitForUp = false;
+       singleOK = true;
+       holdEventPast = false;
+       if ((millis()-upTime) < DCgap && DConUp == false && DCwaiting == true)  DConUp = true;
+       else  DConUp = false;
+       DCwaiting = false;
+   }
+   // Button released
+   else if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce)
+   {        
+       if (not ignoreUp)
+       {
+           upTime = millis();
+           if (DConUp == false) DCwaiting = true;
+           else
+           {
+               event = 2;
+               DConUp = false;
+               DCwaiting = false;
+               singleOK = false;
+           }
+       }
+   }
+   // Test for normal click event: DCgap expired
+   if ( buttonVal == HIGH && (millis()-upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2)
+   {
+       event = 1;
+       DCwaiting = false;
+   }
+   // Test for hold
+   if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
+       // Trigger hold
+       if (not holdEventPast)
+       {
+           event = 3;
+           waitForUp = true;
+           ignoreUp = true;
+           DConUp = false;
+           DCwaiting = false;
+           //downTime = millis();
+           holdEventPast = true;
+       }
+   }
+   buttonLast = buttonVal;
+   return event;
+}
+
 void setup() {
-  Serial.begin(115200);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
 
-  pinMode(0, INPUT_PULLUP);
-  pinMode(PADDLE_LEFT,  OUTPUT);
-  pinMode(PADDLE_RIGHT, OUTPUT);
+  stepper.setSpeed(5);
 
-  digitalWrite(PADDLE_LEFT,  LOW);
-  digitalWrite(PADDLE_RIGHT, LOW);
+  Serial.begin(9600);
+
+  pinMode(BUTTON, INPUT_PULLUP);
+
+  pinMode(LED_DATA, OUTPUT);
+  pinMode(LED_ACTION, OUTPUT);
+
+  digitalWrite(LED_DATA, LOW);
+  digitalWrite(LED_ACTION, LOW);
 
   wifiConnect();
-  // startServer();
 }
 
 void loop() {
-  if (digitalRead(0) == LOW) {
-    resetSettings();
+  digitalWrite(LED_DATA, blockData ? HIGH : LOW);
+  digitalWrite(LED_ACTION, blockAction ? HIGH : LOW);
+
+  if (remainingSteps != 0) {
+    int steps = min(remainingSteps, maxSteps);
+    int move = steps * stepDirection;
+
+    Serial.println("running - " + (String) move);
+    stepper.step(move);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+
+    delay(10);
+    remainingSteps = remainingSteps - steps;
+  } else {
+    if ((millis() - lastTime) > timerDelay) {
+      if (!blockData) {
+        sendData();
+        delay(10);
+      }
+
+      if (!blockAction) {
+        requestAction();
+        delay(10);
+      }
+
+      lastTime = millis();
+    }
+
+    int b = checkButton();
+
+    if (b == 1) clickEvent();
+    else if (b == 2) doubleClickEvent();
+    else if (b == 3) holdEvent();
   }
-
-  if ((millis() - lastStatusTime) > statusTimerDelay) {
-    sendData();
-
-    lastStatusTime = millis();
-  }
-
-  if ((millis() - lastActionTime) > actionTimerDelay) {
-    requestAction();
-
-    lastActionTime = millis();
-  }
-
-
-  // server->handleClient();
 }
