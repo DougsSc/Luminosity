@@ -39,7 +39,7 @@ app.get('/data', (req, res) => {
 })
 
 app.post('/data', (req, res) => {
-  data.push(req.body)
+  data.data.push(req.body)
   saveData()
   res.sendStatus(200)
 })
@@ -71,7 +71,7 @@ app.get('/action', (req, res) => {
     return res.json(next)
   }
 
-  res.sendStatus(200)
+  res.json(null)
 })
 
 app.listen(port, () => {
