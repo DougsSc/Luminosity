@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 void main() => runApp(
   MaterialApp(
     home: HomePage(),
-    title: 'Weather Monitor',
+    title: 'Luminosity',
     theme: ThemeData(
       brightness: Brightness.light,
       appBarTheme: AppBarTheme(brightness: Brightness.dark),

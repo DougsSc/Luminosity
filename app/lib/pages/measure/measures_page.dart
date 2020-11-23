@@ -24,16 +24,17 @@ class _MeasuresPageState extends State<MeasuresPage> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: StreamBuilder<List<Measure>>(
-          stream: _bloc.stream,
-          builder: (context, snapshot) {
-            if (snapshot.hasError)
-              return Center(child: Text('Não foi possível buscar os dados'));
-            if (!snapshot.hasData)
-              return Center(child: CircularProgressIndicator());
+        stream: _bloc.stream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError)
+            return Center(child: Text('Não foi possível buscar os dados'));
+          if (!snapshot.hasData)
+            return Center(child: CircularProgressIndicator());
 
-            sensors = snapshot.data;
-            return _listView(snapshot.data.reversed.toList());
-          }),
+          sensors = snapshot.data;
+          return _listView(snapshot.data.reversed.toList());
+        },
+      ),
     );
   }
 
@@ -90,33 +91,42 @@ class _MeasuresPageState extends State<MeasuresPage> {
   _measureItem(Measure measure) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 16),
-      child: Column(
+      child: Row(
         children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              _getIcon("temperature"),
-              SizedBox(width: 16),
-              Label('${measure.temperature} ºC'),
-            ],
+          Expanded(
+            flex: 4,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _getIcon("temperature"),
+                SizedBox(width: 16),
+                Label('${measure.temperature} ºC'),
+              ],
+            ),
           ),
           SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              _getIcon("air_moisture"),
-              SizedBox(width: 6),
-              Label('${measure.moisture} %'),
-            ],
+          Expanded(
+            flex: 2,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _getIcon("air_moisture"),
+                SizedBox(width: 6),
+                Label('${measure.moisture} %'),
+              ],
+            ),
           ),
           SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              _getIcon("luminosity"),
-              SizedBox(width: 16),
-              Label('${measure.luminosity} %'),
-            ],
+          Expanded(
+            flex: 4,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _getIcon("luminosity"),
+                SizedBox(width: 16),
+                Label('${measure.luminosity} %'),
+              ],
+            ),
           ),
         ],
       ),

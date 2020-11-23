@@ -12,4 +12,13 @@ class MovimentBloc extends SimpleBloc<List<Measure>> {
       addError(e);
     }
   }
+
+  Future<double> state() async {
+    try {
+      return await MovimentApi.state();
+    } catch(e) {
+      print(e);
+      addError(e);
+    }
+  }
 }

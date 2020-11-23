@@ -12,6 +12,14 @@ class MovimentPage extends StatefulWidget {
 
 class _MovimentPageState extends State<MovimentPage> {
   final _bloc = MovimentBloc();
+  double _currentState = 50;
+
+  @override
+  void initState() {
+    super.initState();
+
+    setCurrentState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +56,7 @@ class _MovimentPageState extends State<MovimentPage> {
                 child: FlutterSlider(
                   centeredOrigin: true,
                   jump: true,
-                  values: [50],
+                  values: [_currentState],
                   selectByTap: true,
                   handler: FlutterSliderHandler(
                     child: FaIcon(
@@ -94,5 +102,16 @@ class _MovimentPageState extends State<MovimentPage> {
         ],
       ),
     );
+  }
+
+  void setCurrentState() async {
+    await _bloc.state();
+    _currentState = await _bloc.state();
+
+    print('CurrentState $_currentState');
+
+    setState(() {
+      _currentState *= 100;
+    });
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:app/utils/helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:app/entitys/measure.dart';
 import 'package:app/utils/api.dart';
@@ -22,5 +23,17 @@ class MovimentApi {
     });
 
     print('Response Body: ${response.body}'); /**/
+  }
+
+  static Future<double> state() async {
+    // print("POST => move($value)");
+
+    String url = '$DOMAIN/currentPosition';
+
+    http.Response response = await http.get(url);
+
+    print('Response Body: ${response.body}');
+
+    return convertToDouble(response.body);
   }
 }
