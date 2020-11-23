@@ -19,7 +19,7 @@ function saveData() {
 }
 
 function readData() {
-  data = JSON.parse(fs.readFileSync)
+  data = JSON.parse(fs.readFileSync(DATA_FILE))
 }
 
 if (!fs.existsSync(DATA_FILE)) {
