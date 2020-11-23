@@ -1,11 +1,10 @@
 import 'package:app/pages/measure/measures_page.dart';
-import 'package:app/pages/moviment/moviment_api.dart';
 import 'package:app/pages/moviment/moviment_page.dart';
-import 'package:app/pages/trigger/add_trigger_page.dart';
-import 'package:app/pages/trigger/trigger_page.dart';
 import 'package:app/utils/nav.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import 'device/devices_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -18,7 +17,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         key: _scaffoldKey,
         appBar: AppBar(
@@ -33,12 +32,16 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.white,
                 ),
               ),
-              //Icon(Icons.notifications_active, color: Colors.white))
+              Tab(
+                icon: FaIcon(
+                  FontAwesomeIcons.microchip,
+                  color: Colors.white,
+                ),
+              ),
             ],
           ),
         ),
         body: _body(),
-        //floatingActionButton: _floatActionButton(),
       ),
     );
   }
@@ -47,24 +50,7 @@ class _HomePageState extends State<HomePage> {
     return TabBarView(children: [
       MeasuresPage(),
       MovimentPage(),
+      DevicesPage(),
     ]);
-  }
-
-  _floatActionButton() {
-    return Container(
-      child: FloatingActionButton(
-          onPressed: _onClickAddAlert,
-          child: FaIcon(
-            FontAwesomeIcons.arrowsAltH,
-            color: Colors.white,
-          )
-          // Icon(Icons.add, color: Colors.white),
-          ),
-    );
-  }
-
-  _onClickAddAlert() {
-    push(context, MovimentPage());
-    //push(context, AddTriggerPage());
   }
 }

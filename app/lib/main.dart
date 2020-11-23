@@ -1,4 +1,4 @@
-import 'package:app/pages/home/home_page.dart';
+import 'file:///C:/Users/Doug/AndroidStudioProjects/Luminosity/app/lib/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(

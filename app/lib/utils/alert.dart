@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:app/widgets/dividing_line.dart';
+import 'package:app/widgets/label.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -14,12 +16,21 @@ showAlert(BuildContext context, String title, String content) {
   );
 }
 
-showError(BuildContext context, String error) {
+showDefaultError(BuildContext context) {
+  showError(
+    context,
+    'Erro',
+    'Erro desconhecido',
+  );
+}
+
+
+showError(BuildContext context, String title, String desc) {
   showDialog(
     context: context,
     builder: (BuildContext context) => getDialog(
-       'Erro',
-      error,
+      title,
+      desc,
       [getAction('OK', () => Navigator.of(context).pop(), isDefault: true)],
     ),
   );
@@ -56,14 +67,72 @@ dynamic getAction(String title, Function onPressed,
   }
 }
 
-showSnackBar(ScaffoldState state, String content) {
-  state.showSnackBar(SnackBar(
+showSnackBar(GlobalKey<ScaffoldState> scaffold, String content) {
+  scaffold.currentState.showSnackBar(SnackBar(
     content: Text(content),
-    backgroundColor: Theme.of(state.context).primaryColor,
+    backgroundColor: Theme.of(scaffold.currentState.context).primaryColor,
+//    duration: ,
     action: SnackBarAction(
       label: 'OK',
       textColor: Colors.white,
-      onPressed: () => state.hideCurrentSnackBar,
+      onPressed: () => scaffold.currentState.hideCurrentSnackBar,
     ),
   ));
+}
+
+showLoadingSnackBar(GlobalKey<ScaffoldState> scaffold, String content) {
+  scaffold.currentState.showSnackBar(SnackBar(
+    content: Row(
+      children: <Widget>[
+        Expanded(child: Text(content)),
+        Container(
+          height: 20,
+          width: 20,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ],
+    ),
+    backgroundColor: Theme.of(scaffold.currentState.context).primaryColor,
+  ));
+}
+
+showBottomQuestion(context, title, content, button) {
+  showModalBottomSheet(
+    context: context,
+    builder: (BuildContext context) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 24,16, 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).backgroundColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: const Radius.circular(16.0),
+            topRight: const Radius.circular(16.0),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(width: 50, child: DividingLine()),
+              SizedBox(height: 24),
+              Label(title),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Label(
+                  content,
+//                  fontSize: 16,
+                  isBold: false,
+                  textAlign: TextAlign.justify,
+                ),
+              ),
+              SizedBox(height: 16),
+              Row(children: <Widget>[Expanded(child: button)]),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
