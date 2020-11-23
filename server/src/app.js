@@ -28,9 +28,14 @@ if (!fs.existsSync(DATA_FILE)) {
 
 app.use(json())
 
+app.get('/currentPosition', (req, res) => {
+  readData();
+  res.json(data.position)
+})
+
 app.get('/data', (req, res) => {
   readData()
-  res.json(data)
+  res.json(data.data)
 })
 
 app.post('/data', (req, res) => {
@@ -52,9 +57,9 @@ app.post('/action', (req, res) => {
 
 app.get('/action', (req, res) => {
   const action = actions.pop()
-  if (action && action.value !== 0) {
+  if (action) {
     readData()
-    const nextPosition = Math.max(Math.min(data.position + action.value, 1), 0)
+    const nextPosition = Math.max(Math.min(action.value, 1), 0)
 
     const next = {
       value: nextPosition - data.position
