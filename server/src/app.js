@@ -15,6 +15,7 @@ let data = {
 const actions = []
 
 function saveData() {
+  data.data = data.data.slice(Math.max(data.data.length - 20, 0))
   fs.writeFileSync(DATA_FILE, JSON.stringify(data))
 }
 
